@@ -15,5 +15,6 @@
     "incremental": true,
     "plugins": ,
     "paths": {
-      "@/*": ["./*" "node_modules"]
+      "@/*": ["./*"]
+    }
 }
