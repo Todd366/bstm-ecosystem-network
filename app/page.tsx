@@ -1,6 +1,6 @@
 import dynamic from 'next/dynamic'
 
-const G = dynamic(() => import('@/components/EcosystemGraph'), {
+const G = dynamic(() => import('../components/EcosystemGraph'), {
   ssr: false,
   loading: () => (
     <div style={{
