@@ -34,7 +34,7 @@ function Card({ data }: NodeProps) {
   return (
     <div
       onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      onClick={() => (data.onView as (n: EcoNode) => void)?.(data as unknown as EcoNode)}
+      onClick={() => { const fn = data.onView as unknown as (n: EcoNode) => void; if (fn) fn(data as unknown as EcoNode) }}
       style={{
         background: t.bg,
         border:`1.5px solid ${hov ? t.b : t.b+'99'}`,
