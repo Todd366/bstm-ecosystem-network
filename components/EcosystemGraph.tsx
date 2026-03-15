@@ -6,8 +6,8 @@ import {
   type Node, type Edge, type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { supabase, type EcoNode, type NodeType } from '@/lib/supabase'
-import { SEED } from '@/lib/seed'
+import { supabase, type EcoNode, type NodeType } from '../lib/supabase'
+import { SEED } from '../lib/seed'
 import EditModal from './EditModal'
 
 // ── theme ────────────────────────────────────────────────────────────────────

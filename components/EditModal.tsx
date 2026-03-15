@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { supabase, type EcoNode, type NodeType, type NodeStatus } from '@/lib/supabase'
+import { supabase, type EcoNode, type NodeType, type NodeStatus } from '../lib/supabase'
 
 const TYPES: NodeType[]    = ['sovereign','trust','foundation','org','company','dept','room']
 const STATUSES: NodeStatus[] = ['green','yellow','red']
