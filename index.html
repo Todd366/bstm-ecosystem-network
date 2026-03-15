@@ -2,658 +2,458 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <title>BSTM Network — Live</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700;900&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
+:root{--bg:#04040d;--bg2:#06060e;--bg3:#090912;--bg4:#0a0f1a;--brd:#12122a;--brd2:#1e1e38;--brd3:#252540;--tx:#e0e0e0;--tx2:#aaa;--tx3:#555;--tx4:#333;--gold:#d4af37;--blue:#38bdf8;--grn:#22c55e;--yel:#eab308;--red:#ef4444;--org:#fb923c;--pur:#a78bfa;--sky:#60a5fa}
+body.light{--bg:#f0f4f8;--bg2:#fff;--bg3:#f8fafc;--bg4:#e8eef5;--brd:#d0dae8;--brd2:#c4d0e0;--brd3:#b8c8d8;--tx:#0f172a;--tx2:#334155;--tx3:#64748b;--tx4:#94a3b8}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#04040d;color:#e0e0e0;font-family:'IBM Plex Mono',monospace;overflow:hidden;height:100vh;width:100vw}
+html,body{height:100%;overflow:hidden;touch-action:none}
+body{background:var(--bg);color:var(--tx);font-family:'IBM Plex Mono',monospace;transition:background .25s,color .25s}
 #app{width:100vw;height:100vh;position:relative}
-
-/* STATS BAR */
-#statsbar{
-  position:absolute;top:0;left:0;right:0;height:52px;z-index:200;
-  background:linear-gradient(180deg,#04040d 0%,#04040dee 100%);
-  border-bottom:1px solid #12122a;
-  display:flex;align-items:center;padding:0 20px;gap:0;
-  backdrop-filter:blur(12px);
-}
-.logo{font-size:14px;font-weight:900;color:#d4af37;letter-spacing:.14em;margin-right:22px;text-shadow:0 0 16px #d4af3755}
-.logo span{color:#38bdf8}
-.logo sub{font-size:8px;color:#333;font-weight:400;margin-left:6px}
-.divider{width:1px;height:28px;background:#12122a;margin-right:20px}
-.stat{margin-right:20px}
-.stat-l{font-size:7px;color:#444;letter-spacing:.12em}
-.stat-v{font-size:12px;font-weight:800}
-.status-dot{width:6px;height:6px;border-radius:50%;margin-right:10px;display:inline-block}
-.bar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.sync-txt{font-size:9px;color:#2a2a4a}
-.btn-sm{background:#0a0f1a;border:1px solid #60a5fa33;border-radius:5px;color:#60a5fa;font-size:9px;padding:4px 10px;cursor:pointer;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em}
-.btn-sm:hover{border-color:#60a5fa88;color:#93c5fd}
-
-/* CANVAS AREA */
-#canvas-wrap{position:absolute;inset:0;top:52px;overflow:hidden;cursor:grab}
-#canvas-wrap.dragging{cursor:grabbing}
-#canvas-wrap svg{width:100%;height:100%;display:block}
-
-/* BURN WIDGET */
-#burn{
-  position:absolute;bottom:20px;left:20px;z-index:100;
-  background:#0f0500;border:1.5px solid #fb923c77;
-  box-shadow:0 0 24px #fb923c33;border-radius:10px;
-  padding:12px 18px;min-width:140px;
-}
-#burn .bl{font-size:8px;color:#fb923c;letter-spacing:.18em;margin-bottom:4px}
-#burn .bv{font-size:24px;font-weight:900;color:#fb923c}
-#burn .bs{font-size:8px;color:#555;margin-top:3px}
-
-/* VIEW PANEL */
-#panel{
-  position:absolute;top:62px;right:16px;z-index:300;
-  background:#06060e;border:1.5px solid #38bdf8;
-  box-shadow:0 0 28px #38bdf833;border-radius:12px;
-  padding:18px;width:272px;
-  display:none;animation:slideIn .18s ease;
-}
-#panel.visible{display:block}
-.panel-type{font-size:8px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:2px}
-.panel-name{font-size:14px;font-weight:900;color:#f0f0f0;line-height:1.3;margin-bottom:14px}
-.panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.panel-cell{background:#0d0d1a;border-radius:6px;padding:7px 9px}
-.panel-cell-l{font-size:7px;color:#444;letter-spacing:.1em}
-.panel-cell-v{font-size:13px;font-weight:800;margin-top:2px}
-.panel-parent{font-size:9px;color:#555;margin-bottom:6px}
-.panel-url{font-size:9px;word-break:break-all;text-decoration:none;display:block;margin-bottom:8px}
-.panel-notes{font-size:9px;color:#666;margin-bottom:8px;line-height:1.5}
-.panel-open{
-  display:block;text-align:center;background:#00101a;
-  border:1px solid #38bdf8;border-radius:7px;color:#38bdf8;
-  font-size:10px;padding:8px 0;text-decoration:none;font-weight:800;
-  box-shadow:0 0 16px #38bdf833;margin-bottom:8px;letter-spacing:.08em;
-}
-.btn-edit{
-  width:100%;background:#0a0f1a;border:1px solid #38bdf866;
-  border-radius:7px;color:#38bdf8;padding:9px 0;cursor:pointer;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:800;letter-spacing:.1em;
-  box-shadow:0 0 10px #38bdf822;
-}
-.btn-edit:hover{border-color:#38bdf8;box-shadow:0 0 16px #38bdf844}
-#panel-close{background:none;border:none;color:#555;font-size:16px;cursor:pointer;padding:0;position:absolute;top:14px;right:14px}
-
-/* EDIT MODAL */
-#modal-backdrop{position:fixed;inset:0;background:#000c;z-index:800;display:none;backdrop-filter:blur(4px)}
-#modal-backdrop.visible{display:block}
-#modal{
-  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  z-index:900;background:#06060f;border:1.5px solid #252540;
-  box-shadow:0 0 80px #000;border-radius:14px;
-  width:420px;max-height:88vh;overflow-y:auto;padding:24px;
-  font-family:'IBM Plex Mono',monospace;
-}
-.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-.modal-tag{font-size:8px;color:#555;letter-spacing:.15em}
-.modal-title{font-size:15px;font-weight:900;color:#e0e0e0;margin-top:3px}
-#modal-close{background:none;border:1px solid #252540;border-radius:6px;color:#555;font-size:16px;cursor:pointer;padding:4px 10px}
-.field{margin-bottom:12px}
-.field label{font-size:9px;color:#555;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;display:block}
-.field input,.field select,.field textarea{
-  width:100%;background:#090912;border:1px solid #1e1e38;
-  border-radius:6px;color:#e0e0e0;padding:8px 10px;
-  font-family:'IBM Plex Mono',monospace;font-size:12px;
-}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#38bdf855}
-.field textarea{height:64px;resize:vertical}
-.field-row{display:grid;gap:10px;margin-bottom:12px}
-.field-row.two{grid-template-columns:1fr 1fr}
-.field-row.three{grid-template-columns:1fr 1fr 1fr}
-.msg{border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:11px;display:none}
-.msg.ok{background:#0a1a0a;border:1px solid #22c55e44;color:#22c55e;display:block}
-.msg.err{background:#1a0a0a;border:1px solid #ef444444;color:#ef4444;display:block}
-.modal-btns{display:flex;gap:10px}
-.btn-cancel{flex:1;background:none;border:1px solid #252540;border-radius:7px;color:#666;padding:10px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px}
-.btn-save{flex:2;background:#14532d;border:2px solid #22c55e;border-radius:7px;color:#22c55e;padding:10px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:900;letter-spacing:.1em;box-shadow:0 0 18px #22c55e44;transition:all .15s}
-.btn-save:hover{background:#166534;box-shadow:0 0 28px #22c55e77;color:#fff}
-.btn-save:active{transform:scale(.97)}
-.modal-id{margin-top:10px;font-size:8px;color:#2a2a3a;text-align:center}
-
-/* NODE SVG STYLES */
-.node-card{cursor:pointer;transition:filter .2s}
-.node-card:hover .node-bg{filter:brightness(1.3)}
-.node-card:hover .node-label{fill:#fff}
-.node-pulse{animation:pulse-node 2.4s ease-in-out infinite}
-.node-dot-pulse{animation:pulse-dot 2s ease-in-out infinite}
-
-/* LOADING */
-#loading{
-  position:absolute;inset:0;background:#04040d;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
-  z-index:500;
-}
-#loading-title{font-size:11px;color:#d4af37;letter-spacing:.4em}
-#loading-bar-wrap{width:180px;height:2px;background:#0d0d1a;border-radius:2px;overflow:hidden}
-#loading-bar{height:100%;background:linear-gradient(90deg,#d4af37,#38bdf8);animation:loadBar 1.5s ease-in-out infinite}
-#loading-sub{font-size:9px;color:#333;letter-spacing:.15em}
-
-@keyframes pulse-node{0%,100%{filter:drop-shadow(0 0 4px #d4af3744)}50%{filter:drop-shadow(0 0 16px #d4af3799) drop-shadow(0 0 32px #d4af3744)}}
-@keyframes pulse-dot{0%,100%{opacity:.8}50%{opacity:1;filter:blur(0)}}
-@keyframes loadBar{0%{width:0%;margin-left:0}50%{width:65%;margin-left:17%}100%{width:0%;margin-left:100%}}
-@keyframes slideIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+#bar{position:absolute;top:0;left:0;right:0;height:52px;z-index:200;background:var(--bg);border-bottom:1px solid var(--brd);display:flex;align-items:center;padding:0 12px;gap:0;overflow:hidden;backdrop-filter:blur(12px)}
+.logo{font-size:13px;font-weight:900;color:var(--gold);letter-spacing:.12em;margin-right:14px;text-shadow:0 0 16px #d4af3755;white-space:nowrap}.logo s{color:var(--blue);text-decoration:none}.logo small{font-size:7px;color:var(--tx4);font-weight:400;margin-left:4px}
+.vd{width:1px;height:28px;background:var(--brd);margin-right:12px;flex-shrink:0}
+.st{margin-right:12px;flex-shrink:0}.stl{font-size:7px;color:var(--tx3);letter-spacing:.1em}.stv{font-size:11px;font-weight:800}
+.sdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:5px}
+.br{margin-left:auto;display:flex;align-items:center;gap:7px;flex-shrink:0}
+.bsm{background:var(--bg4);border:1px solid var(--brd2);border-radius:5px;color:var(--sky);font-size:9px;padding:4px 8px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s;white-space:nowrap}.bsm:hover{border-color:var(--sky)}
+#sw{position:relative;display:flex;align-items:center}
+#sch{background:var(--bg4);border:1px solid var(--brd2);border-radius:5px;color:var(--tx);font-size:10px;padding:4px 22px 4px 20px;font-family:'IBM Plex Mono',monospace;width:120px;transition:all .2s}
+#sch:focus{outline:none;border-color:#38bdf855;width:160px}
+#sch::placeholder{color:var(--tx4)}
+#sci{position:absolute;left:6px;font-size:10px;color:var(--tx4);pointer-events:none}
+#scx{position:absolute;right:5px;background:none;border:none;color:var(--tx3);font-size:10px;cursor:pointer;display:none;line-height:1}#scx.v{display:block}
+#sortsel{background:var(--bg4);border:1px solid var(--brd2);border-radius:5px;color:var(--tx2);font-size:9px;padding:4px 6px;font-family:'IBM Plex Mono',monospace;cursor:pointer}
+.synctxt{font-size:8px;color:var(--tx4);white-space:nowrap}
+#cw{position:absolute;inset:0;top:52px;overflow:hidden;cursor:grab;touch-action:none}
+#cw.drag{cursor:grabbing}
+#cw svg{width:100%;height:100%;display:block}
+#zbtns{position:absolute;right:16px;bottom:130px;z-index:100;display:flex;flex-direction:column;gap:4px}
+.zbtn{width:32px;height:32px;background:var(--bg2);border:1px solid var(--brd2);border-radius:6px;color:var(--tx2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}.zbtn:hover{border-color:var(--sky);color:var(--sky)}
+#legend{position:absolute;right:16px;bottom:20px;z-index:100;background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:9px 11px;font-size:8px;color:var(--tx3)}
+.lr{display:flex;align-items:center;gap:5px;margin-bottom:3px}.lr:last-child{margin-bottom:0}
+.lsq{width:7px;height:7px;border-radius:2px;flex-shrink:0}.ldot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+#burn{position:absolute;bottom:20px;left:20px;z-index:100;background:var(--bg2);border:1.5px solid #fb923c77;box-shadow:0 0 20px #fb923c22;border-radius:10px;padding:10px 15px;min-width:125px}
+#burn .bl{font-size:8px;color:var(--org);letter-spacing:.15em;margin-bottom:3px}#burn .bv{font-size:20px;font-weight:900;color:var(--org)}#burn .bs{font-size:8px;color:var(--tx3);margin-top:2px}
+#panel{position:absolute;top:62px;right:16px;z-index:300;background:var(--bg2);border:1.5px solid var(--blue);box-shadow:0 0 28px #38bdf822;border-radius:12px;padding:16px;width:264px;display:none;animation:sIn .18s ease}
+#panel.v{display:block}
+.pt{font-size:8px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
+.pn{font-size:13px;font-weight:900;color:var(--tx);line-height:1.3;margin-bottom:11px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:9px}
+.pc{background:var(--bg3);border-radius:6px;padding:6px 8px}.pcl{font-size:7px;color:var(--tx3);letter-spacing:.1em}.pcv{font-size:12px;font-weight:800;margin-top:2px}
+.ppar{font-size:9px;color:var(--tx3);margin-bottom:5px}
+.purl{font-size:9px;word-break:break-all;text-decoration:none;display:block;margin-bottom:6px}
+.pnts{font-size:9px;color:var(--tx3);margin-bottom:6px;line-height:1.5}
+.popn{display:block;text-align:center;background:var(--bg4);border:1px solid var(--blue);border-radius:7px;color:var(--blue);font-size:10px;padding:7px 0;text-decoration:none;font-weight:800;margin-bottom:7px;letter-spacing:.06em}
+.bedit{width:100%;background:var(--bg4);border:1px solid #38bdf866;border-radius:7px;color:var(--blue);padding:8px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:800;letter-spacing:.08em;transition:all .15s}.bedit:hover{border-color:var(--blue)}
+.bdel{width:100%;background:none;border:1px solid #ef444433;border-radius:7px;color:var(--red);padding:6px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;margin-top:5px;transition:all .15s}.bdel:hover{background:#1a0a0a;border-color:var(--red)}
+.pup{font-size:8px;color:var(--tx4);margin-top:7px;border-top:1px solid var(--brd);padding-top:6px}
+#pclose{background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;position:absolute;top:12px;right:12px}
+#mb{position:fixed;inset:0;background:#000c;z-index:800;display:none;backdrop-filter:blur(4px)}#mb.v{display:block}
+#modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:900;background:var(--bg2);border:1.5px solid var(--brd3);box-shadow:0 0 80px #000;border-radius:14px;width:min(420px,96vw);max-height:90vh;overflow-y:auto;padding:20px}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.mtag{font-size:8px;color:var(--tx3);letter-spacing:.13em}.mtit{font-size:14px;font-weight:900;color:var(--tx);margin-top:2px}
+#mclose{background:none;border:1px solid var(--brd3);border-radius:6px;color:var(--tx3);font-size:15px;cursor:pointer;padding:3px 8px}
+.fi{margin-bottom:9px}.fi label{font-size:9px;color:var(--tx3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;display:block}
+.fi input,.fi select,.fi textarea{width:100%;background:var(--bg3);border:1px solid var(--brd2);border-radius:6px;color:var(--tx);padding:7px 9px;font-family:'IBM Plex Mono',monospace;font-size:12px}
+.fi input:focus,.fi select:focus,.fi textarea:focus{outline:none;border-color:#38bdf855}
+.fi textarea{height:58px;resize:vertical}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:9px}
+.mmsg{border-radius:6px;padding:7px 10px;margin-bottom:9px;font-size:11px;display:none}
+.mmsg.ok{background:#0a1a0a;border:1px solid #22c55e44;color:var(--grn);display:block}
+.mmsg.err{background:#1a0a0a;border:1px solid #ef444444;color:var(--red);display:block}
+.mbtns{display:flex;gap:8px}
+.bcan{flex:1;background:none;border:1px solid var(--brd3);border-radius:7px;color:var(--tx3);padding:9px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.bsav{flex:2;background:#14532d;border:2px solid var(--grn);border-radius:7px;color:var(--grn);padding:9px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:900;letter-spacing:.08em;box-shadow:0 0 16px #22c55e33;transition:all .15s}
+.bsav:hover{background:#166534;box-shadow:0 0 26px #22c55e55;color:#fff}.bsav:active{transform:scale(.97)}
+.mid{margin-top:7px;font-size:8px;color:var(--tx4);text-align:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spn{display:inline-block;width:11px;height:11px;border:2px solid #22c55e33;border-top-color:var(--grn);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+#conf{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1100;background:var(--bg2);border:1.5px solid #ef444466;box-shadow:0 0 40px #ef444422;border-radius:12px;padding:20px;width:min(300px,90vw);text-align:center;display:none}#conf.v{display:block}
+#confmsg{font-size:12px;color:var(--tx);margin-bottom:14px;line-height:1.6}
+#confbtns{display:flex;gap:8px}
+.bno{flex:1;background:none;border:1px solid var(--brd3);border-radius:7px;color:var(--tx3);padding:8px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.byes{flex:1;background:#1a0a0a;border:1px solid var(--red);border-radius:7px;color:var(--red);padding:8px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:900}
+#toast{position:fixed;bottom:80px;right:20px;z-index:2000;background:#0a1a0a;border:1px solid #22c55e66;border-radius:8px;padding:9px 14px;font-size:11px;color:var(--grn);font-family:'IBM Plex Mono',monospace;display:none;animation:sIn .2s ease;max-width:260px}
+#toast.err{background:#1a0a0a;border-color:#ef444466;color:var(--red)}#toast.v{display:block}
+#tip{position:fixed;z-index:1000;background:var(--bg2);border:1px solid var(--brd2);border-radius:6px;padding:7px 10px;font-size:9px;color:var(--tx2);pointer-events:none;display:none;max-width:210px;line-height:1.6;box-shadow:0 4px 16px #0008}
+.cf{position:fixed;pointer-events:none;z-index:3000;border-radius:2px;animation:cff linear forwards}
+@keyframes cff{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+#loading{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:500}
+.cspn{width:38px;height:38px;border:3px solid var(--brd);border-top:3px solid var(--gold);border-radius:50%;animation:spin .9s linear infinite}
+#ltxt{font-size:10px;color:var(--gold);letter-spacing:.28em}#lsub{font-size:9px;color:var(--tx4);letter-spacing:.1em}
+@keyframes nIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes pN{0%,100%{filter:drop-shadow(0 0 4px #d4af3744)}50%{filter:drop-shadow(0 0 16px #d4af3799)}}
+@keyframes sIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+.ncard{cursor:pointer;animation:nIn .4s ease forwards}.npulse{animation:nIn .4s ease forwards,pN 2.4s ease-in-out .4s infinite}
 </style>
 </head>
 <body>
 <div id="app">
+<div id="loading"><div class="cspn"></div><div id="ltxt">BSTM NETWORK</div><div id="lsub">CONNECTING...</div></div>
 
-  <!-- Loading screen -->
-  <div id="loading">
-    <div id="loading-title">BSTM NETWORK</div>
-    <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
-    <div id="loading-sub">CONNECTING TO SUPABASE...</div>
+<div id="bar">
+  <div class="logo">BSTM<s>NET</s><small>v3</small></div>
+  <div class="vd"></div>
+  <div class="st"><div class="stl">NODES</div><div class="stv" id="sn" style="color:var(--sky)">—</div></div>
+  <div class="st"><div class="stl">CITIZENS</div><div class="stv" id="su" style="color:var(--pur)">—</div></div>
+  <div class="st"><div class="stl">REVENUE</div><div class="stv" id="sr" style="color:var(--grn)">—</div></div>
+  <div class="st"><div class="stl">THB</div><div class="stv" id="sb" style="color:var(--org)">—</div></div>
+  <div class="vd"></div>
+  <span class="sdot" style="background:var(--grn);box-shadow:0 0 5px var(--grn)"></span><span id="cg" style="font-size:9px;color:var(--tx3);margin-right:7px">—</span>
+  <span class="sdot" style="background:var(--yel);box-shadow:0 0 5px var(--yel)"></span><span id="cy" style="font-size:9px;color:var(--tx3);margin-right:7px">—</span>
+  <span class="sdot" style="background:var(--red);box-shadow:0 0 5px var(--red)"></span><span id="cr" style="font-size:9px;color:var(--tx3);margin-right:7px">—</span>
+  <div class="br">
+    <div id="sw"><span id="sci">⌕</span><input id="sch" type="text" placeholder="Search..." oninput="onSearch(this.value)" autocomplete="off" aria-label="Search nodes"/><button id="scx" onclick="clearSrch()" aria-label="Clear search">✕</button></div>
+    <select id="sortsel" onchange="onSort(this.value)" aria-label="Sort nodes"><option value="">Sort…</option><option value="users">↓ Users</option><option value="revenue">↓ Revenue</option><option value="thb">↓ THB</option><option value="name">A–Z</option></select>
+    <span class="synctxt" id="stxt">—</span>
+    <button class="bsm" onclick="loadData()" aria-label="Refresh">↺</button>
+    <button class="bsm" onclick="resetView()" aria-label="Reset view">⊙</button>
+    <button class="bsm" onclick="exportPNG()" aria-label="Export PNG">📷</button>
+    <button class="bsm" onclick="shareLink()" aria-label="Share link">🔗</button>
+    <button class="bsm" id="tbtn" onclick="toggleTheme()" aria-label="Toggle theme">☀️</button>
   </div>
+</div>
 
-  <!-- Stats bar -->
-  <div id="statsbar">
-    <div class="logo">BSTM<span>NET</span><sub>v3·LIVE</sub></div>
-    <div class="divider"></div>
-    <div class="stat"><div class="stat-l">NODES</div><div class="stat-v" id="s-nodes" style="color:#60a5fa">—</div></div>
-    <div class="stat"><div class="stat-l">CITIZENS</div><div class="stat-v" id="s-users" style="color:#a78bfa">—</div></div>
-    <div class="stat"><div class="stat-l">REVENUE</div><div class="stat-v" id="s-rev" style="color:#22c55e">—</div></div>
-    <div class="stat"><div class="stat-l">THB BURN</div><div class="stat-v" id="s-burn" style="color:#fb923c">—</div></div>
-    <div class="divider"></div>
-    <span class="status-dot" id="dot-g" style="background:#22c55e;box-shadow:0 0 5px #22c55e"></span><span id="cnt-g" style="font-size:10px;color:#555;margin-right:10px">—</span>
-    <span class="status-dot" id="dot-y" style="background:#eab308;box-shadow:0 0 5px #eab308"></span><span id="cnt-y" style="font-size:10px;color:#555;margin-right:10px">—</span>
-    <span class="status-dot" id="dot-r" style="background:#ef4444;box-shadow:0 0 5px #ef4444"></span><span id="cnt-r" style="font-size:10px;color:#555;margin-right:10px">—</span>
-    <div class="bar-right">
-      <span class="sync-txt" id="sync-txt">SYNC 60s</span>
-      <button class="btn-sm" onclick="loadData()">↺ REFRESH</button>
-    </div>
+<div id="cw" role="main" aria-label="Ecosystem graph">
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#38bdf855"/></marker>
+      <marker id="arr-thb" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#fb923c88"/></marker>
+      <marker id="arr-hld" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#a78bfa55"/></marker>
+    </defs>
+    <g id="gr"></g>
+  </svg>
+</div>
+
+<div id="zbtns">
+  <button class="zbtn" onclick="doZoom(1.2)" aria-label="Zoom in">+</button>
+  <button class="zbtn" onclick="doZoom(0.83)" aria-label="Zoom out">−</button>
+</div>
+
+<div id="legend">
+  <div style="font-size:7px;color:var(--tx3);letter-spacing:.1em;margin-bottom:5px">LAYERS</div>
+  <div class="lr"><div class="lsq" style="background:#0f0900;border:1px solid #d4af37"></div>SOVEREIGN</div>
+  <div class="lr"><div class="lsq" style="background:#000b1a;border:1px solid #60a5fa"></div>TRUST</div>
+  <div class="lr"><div class="lsq" style="background:#001610;border:1px solid #34d399"></div>FOUNDATION</div>
+  <div class="lr"><div class="lsq" style="background:#0c0018;border:1px solid #a78bfa"></div>ORG</div>
+  <div class="lr"><div class="lsq" style="background:#150800;border:1px solid #fb923c"></div>COMPANY</div>
+  <div class="lr"><div class="lsq" style="background:#000f18;border:1px solid #38bdf8"></div>DEPT</div>
+  <div class="lr"><div class="lsq" style="background:#0c0c0c;border:1px solid #4b5563"></div>ROOM</div>
+  <div style="margin-top:5px;padding-top:5px;border-top:1px solid var(--brd)">
+  <div class="lr"><div class="ldot" style="background:var(--grn);box-shadow:0 0 4px var(--grn)"></div>ACTIVE</div>
+  <div class="lr"><div class="ldot" style="background:var(--yel);box-shadow:0 0 4px var(--yel)"></div>CAUTION</div>
+  <div class="lr"><div class="ldot" style="background:var(--red);box-shadow:0 0 4px var(--red)"></div>ALERT</div>
   </div>
+</div>
 
-  <!-- Graph canvas -->
-  <div id="canvas-wrap">
-    <svg id="svg" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L8,3 z" fill="#38bdf855"/>
-        </marker>
-        <marker id="arr-thb" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L8,3 z" fill="#fb923c88"/>
-        </marker>
-        <marker id="arr-hld" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L8,3 z" fill="#a78bfa55"/>
-        </marker>
-        <filter id="glow-gold"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        <filter id="glow-blue"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      </defs>
-      <g id="graph-root"></g>
-    </svg>
+<div id="burn"><div class="bl">🔥 THB BURNED</div><div class="bv" id="bval">0</div><div class="bs">2% trade · 5% unstake</div></div>
+
+<div id="panel" role="complementary" aria-label="Node details">
+  <button id="pclose" onclick="closePanel()" aria-label="Close">✕</button>
+  <div class="pt" id="pt"></div><div class="pn" id="pname"></div>
+  <div class="pgrid">
+    <div class="pc"><div class="pcl">STATUS</div><div class="pcv" id="ps"></div></div>
+    <div class="pc"><div class="pcl">USERS</div><div class="pcv" style="color:var(--pur)" id="pu"></div></div>
+    <div class="pc"><div class="pcl">REVENUE</div><div class="pcv" style="color:var(--grn)" id="prev"></div></div>
+    <div class="pc"><div class="pcl">THB BURN</div><div class="pcv" style="color:var(--org)" id="pthb"></div></div>
   </div>
+  <div class="ppar" id="ppar"></div>
+  <a class="purl" id="purl" target="_blank" rel="noopener noreferrer" style="display:none"></a>
+  <div class="pnts" id="pnts" style="display:none"></div>
+  <a class="popn" id="popn" target="_blank" rel="noopener noreferrer" style="display:none">↗ OPEN APP</a>
+  <button class="bedit" onclick="openEdit()" aria-label="Edit node">✎ EDIT NODE</button>
+  <button class="bdel" onclick="confirmDel()" aria-label="Delete node">🗑 DELETE NODE</button>
+  <div class="pup" id="pup"></div>
+</div>
 
-  <!-- Burn widget -->
-  <div id="burn">
-    <div class="bl">🔥 THB BURNED</div>
-    <div class="bv" id="burn-val">0</div>
-    <div class="bs">2% trade · 5% unstake</div>
+<div id="mb" onclick="if(event.target===this)closeModal()"></div>
+<div id="modal" role="dialog" aria-modal="true" aria-label="Edit node">
+  <div class="mhdr"><div><div class="mtag">EDIT · SUPABASE LIVE</div><div class="mtit" id="mtit"></div></div><button id="mclose" onclick="closeModal()" aria-label="Close">✕</button></div>
+  <div class="fi"><label>Name</label><input id="mn" type="text"/></div>
+  <div class="fr2">
+    <div class="fi"><label>Type</label><select id="mtyp"><option>sovereign</option><option>trust</option><option>foundation</option><option>org</option><option>company</option><option>dept</option><option>room</option></select></div>
+    <div class="fi"><label>Status</label><select id="mst"><option value="green">🟢 green</option><option value="yellow">🟡 yellow</option><option value="red">🔴 red</option></select></div>
   </div>
-
-  <!-- View panel -->
-  <div id="panel">
-    <button id="panel-close" onclick="closePanel()">✕</button>
-    <div class="panel-type" id="p-type"></div>
-    <div class="panel-name" id="p-name"></div>
-    <div class="panel-grid">
-      <div class="panel-cell"><div class="panel-cell-l">STATUS</div><div class="panel-cell-v" id="p-status"></div></div>
-      <div class="panel-cell"><div class="panel-cell-l">USERS</div><div class="panel-cell-v" style="color:#a78bfa" id="p-users"></div></div>
-      <div class="panel-cell"><div class="panel-cell-l">REVENUE</div><div class="panel-cell-v" style="color:#22c55e" id="p-rev"></div></div>
-      <div class="panel-cell"><div class="panel-cell-l">THB BURN</div><div class="panel-cell-v" style="color:#fb923c" id="p-thb"></div></div>
-    </div>
-    <div class="panel-parent" id="p-parent"></div>
-    <a class="panel-url" id="p-url" target="_blank" rel="noopener noreferrer" style="display:none"></a>
-    <div class="panel-notes" id="p-notes" style="display:none"></div>
-    <a class="panel-open" id="p-open" target="_blank" rel="noopener noreferrer" style="display:none">↗ OPEN APP</a>
-    <button class="btn-edit" onclick="openEdit()">✎ EDIT NODE</button>
+  <div class="fi"><label>Parent Node</label><input id="mpar" type="text" placeholder="e.g. BSTM Holdings"/></div>
+  <div class="fr3">
+    <div class="fi"><label>Users</label><input id="muu" type="number" min="0"/></div>
+    <div class="fi"><label>Revenue P</label><input id="mrv" type="number" min="0"/></div>
+    <div class="fi"><label>THB Burn</label><input id="mth" type="number" min="0"/></div>
   </div>
+  <div class="fi"><label>URL</label><input id="murl" type="text" placeholder="https://..."/></div>
+  <div class="fi"><label>Notes</label><textarea id="mnts"></textarea></div>
+  <div id="mmsg" class="mmsg"></div>
+  <div class="mbtns"><button class="bcan" onclick="closeModal()">CANCEL</button><button class="bsav" id="msav" onclick="saveNode()">✓ SAVE TO SUPABASE</button></div>
+  <div class="mid" id="mid"></div>
+</div>
 
-  <!-- Edit modal -->
-  <div id="modal-backdrop" onclick="closeModal()"></div>
-  <div id="modal">
-    <div class="modal-hdr">
-      <div><div class="modal-tag">EDIT NODE · SUPABASE LIVE</div><div class="modal-title" id="m-title"></div></div>
-      <button id="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="field"><label>Name</label><input id="m-name" type="text"/></div>
-    <div class="field-row two">
-      <div class="field"><label>Type</label>
-        <select id="m-type">
-          <option>sovereign</option><option>trust</option><option>foundation</option>
-          <option>org</option><option>company</option><option>dept</option><option>room</option>
-        </select>
-      </div>
-      <div class="field"><label>Status</label>
-        <select id="m-status">
-          <option value="green">🟢 green</option>
-          <option value="yellow">🟡 yellow</option>
-          <option value="red">🔴 red</option>
-        </select>
-      </div>
-    </div>
-    <div class="field"><label>Parent Node</label><input id="m-parent" type="text" placeholder="e.g. BSTM Holdings"/></div>
-    <div class="field-row three">
-      <div class="field"><label>Users</label><input id="m-users" type="number" min="0"/></div>
-      <div class="field"><label>Revenue (P)</label><input id="m-revenue" type="number" min="0"/></div>
-      <div class="field"><label>THB Burn</label><input id="m-thb" type="number" min="0"/></div>
-    </div>
-    <div class="field"><label>URL</label><input id="m-url" type="text" placeholder="https://..."/></div>
-    <div class="field"><label>Notes</label><textarea id="m-notes"></textarea></div>
-    <div id="m-msg" class="msg"></div>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">CANCEL</button>
-      <button class="btn-save" id="m-save-btn" onclick="saveNode()">✓ SAVE TO SUPABASE</button>
-    </div>
-    <div class="modal-id" id="m-id"></div>
-  </div>
-
+<div id="conf" role="alertdialog" aria-modal="true"><div id="confmsg"></div><div id="confbtns"><button class="bno" onclick="closeConf()">CANCEL</button><button class="byes" onclick="doDelete()">DELETE</button></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="tip" role="tooltip"></div>
 </div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-const SUPA_URL  = 'https://jeyneeetujvudwyovdzd.supabase.co'
-const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpleW5lZWV0dWp2dWR3eW92ZHpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjc4OTQsImV4cCI6MjA4ODg0Mzg5NH0.THSZCPRmx-4TVDAyuqerWWNwtk7mniKuv9dQtpkFoM8'
-const sb = supabase.createClient(SUPA_URL, SUPA_ANON)
+const SUPA_URL='https://jeyneeetujvudwyovdzd.supabase.co'
+const SUPA_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpleW5lZWV0dWp2dWR3eW92ZHpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjc4OTQsImV4cCI6MjA4ODg0Mzg5NH0.THSZCPRmx-4TVDAyuqerWWNwtk7mniKuv9dQtpkFoM8'
+const sb=supabase.createClient(SUPA_URL,SUPA_ANON)
+const CACHE='bstmnet_v3'
 
-// ── THEME ─────────────────────────────────────────────────────────────────────
-const TH = {
-  sovereign: {b:'#d4af37',bg:'#0f0900',text:'#d4af37'},
-  trust:     {b:'#60a5fa',bg:'#000b1a',text:'#60a5fa'},
-  foundation:{b:'#34d399',bg:'#001610',text:'#34d399'},
-  org:       {b:'#a78bfa',bg:'#0c0018',text:'#a78bfa'},
-  company:   {b:'#fb923c',bg:'#150800',text:'#fb923c'},
-  dept:      {b:'#38bdf8',bg:'#000f18',text:'#38bdf8'},
-  room:      {b:'#4b5563',bg:'#0c0c0c',text:'#9ca3af'},
-}
-const SC = {green:'#22c55e',yellow:'#eab308',red:'#ef4444'}
-const LAYERS = ['sovereign','trust','foundation','org','company','dept','room']
-const YY = [0,220,420,620,820,1040,1260]
-const GG = [0,320,290,250,215,190,125]
-const NW = {sovereign:200,trust:180,foundation:190,org:160,company:155,dept:150,room:108}
-const NH = {sovereign:52,trust:44,foundation:44,org:40,company:38,dept:36,room:32}
+const TH={sovereign:{b:'#d4af37',bg:'#0f0900'},trust:{b:'#60a5fa',bg:'#000b1a'},foundation:{b:'#34d399',bg:'#001610'},org:{b:'#a78bfa',bg:'#0c0018'},company:{b:'#fb923c',bg:'#150800'},dept:{b:'#38bdf8',bg:'#000f18'},room:{b:'#4b5563',bg:'#0c0c0c'}}
+const SC={green:'#22c55e',yellow:'#eab308',red:'#ef4444'}
+const IC={sovereign:'👑',trust:'🏛',foundation:'🔷',org:'🏢',company:'🏬',dept:'📁',room:'🚪'}
+const LAYERS=['sovereign','trust','foundation','org','company','dept','room']
+const YY=[0,220,420,620,820,1040,1260],GG=[0,320,290,250,215,190,125]
+const NW={sovereign:200,trust:180,foundation:190,org:160,company:155,dept:150,room:108}
+const NH={sovereign:54,trust:46,foundation:46,org:42,company:40,dept:38,room:34}
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let allNodes = []
-let selectedNode = null
-let editingNode = null
-let countdown = 60
-let countTimer = null
+let all=[],sel=null,editing=null,lastSave=0,countdown=60,ctimer=null
+let darkMode=localStorage.getItem('bstmTheme')!=='light'&&(localStorage.getItem('bstmTheme')==='dark'||window.matchMedia('(prefers-color-scheme:dark)').matches)
 
-// ── PAN/ZOOM ──────────────────────────────────────────────────────────────────
-let vx=0,vy=0,vz=1
-let dragging=false,lastX=0,lastY=0
-const wrap = document.getElementById('canvas-wrap')
-const root = document.getElementById('graph-root')
+// PAN/ZOOM
+let vx=0,vy=0,vz=1,drag=false,lx=0,ly=0
+const cw=document.getElementById('cw'),gr=document.getElementById('gr')
+const setTx=()=>gr.setAttribute('transform',`translate(${vx},${vy}) scale(${vz})`)
 
-function setTransform(){root.setAttribute('transform',`translate(${vx},${vy}) scale(${vz})`)}
+cw.addEventListener('mousedown',e=>{if(!e.target.closest('.ncard')){drag=true;lx=e.clientX;ly=e.clientY;cw.classList.add('drag')}})
+window.addEventListener('mousemove',e=>{if(!drag)return;vx+=e.clientX-lx;vy+=e.clientY-ly;lx=e.clientX;ly=e.clientY;setTx()})
+window.addEventListener('mouseup',()=>{drag=false;cw.classList.remove('drag')})
+cw.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.12:.89;const r=cw.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;vx=mx-(mx-vx)*f;vy=my-(my-vy)*f;vz=Math.max(.03,Math.min(3,vz*f));setTx()},{passive:false})
 
-wrap.addEventListener('mousedown',e=>{if(e.target===wrap||e.target.closest('#svg')&&!e.target.closest('.node-card')){dragging=true;lastX=e.clientX;lastY=e.clientY;wrap.classList.add('dragging')}})
-window.addEventListener('mousemove',e=>{if(!dragging)return;vx+=e.clientX-lastX;vy+=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;setTransform()})
-window.addEventListener('mouseup',()=>{dragging=false;wrap.classList.remove('dragging')})
-wrap.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.1:.91;const rect=wrap.getBoundingClientRect();const mx=e.clientX-rect.left,my=e.clientY-rect.top;vx=mx-(mx-vx)*f;vy=my-(my-vy)*f;vz*=f;vz=Math.max(.03,Math.min(3,vz));setTransform()},{passive:false})
+let tps=[]
+cw.addEventListener('touchstart',e=>{e.preventDefault();tps=[...e.touches];if(tps.length===1){drag=true;lx=tps[0].clientX;ly=tps[0].clientY}},{passive:false})
+cw.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===1&&drag){vx+=e.touches[0].clientX-lx;vy+=e.touches[0].clientY-ly;lx=e.touches[0].clientX;ly=e.touches[0].clientY;setTx()}else if(e.touches.length===2&&tps.length===2){const d1=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const d0=Math.hypot(tps[0].clientX-tps[1].clientX,tps[0].clientY-tps[1].clientY);const mx=(e.touches[0].clientX+e.touches[1].clientX)/2,my=(e.touches[0].clientY+e.touches[1].clientY)/2;const r=cw.getBoundingClientRect(),rx=mx-r.left,ry=my-r.top;const f=d1/d0;vx=rx-(rx-vx)*f;vy=ry-(ry-vy)*f;vz=Math.max(.03,Math.min(3,vz*f));setTx();tps=[...e.touches]}},{passive:false})
+cw.addEventListener('touchend',()=>{drag=false;tps=[]})
 
-// Touch support
-let touches=[]
-wrap.addEventListener('touchstart',e=>{touches=[...e.touches];if(touches.length===1){dragging=true;lastX=touches[0].clientX;lastY=touches[0].clientY}})
-wrap.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===1&&dragging){vx+=e.touches[0].clientX-lastX;vy+=e.touches[0].clientY-lastY;lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;setTransform()}else if(e.touches.length===2){const dx=e.touches[0].clientX-e.touches[1].clientX;const dy=e.touches[0].clientY-e.touches[1].clientY;const d=Math.hypot(dx,dy);if(touches.length===2){const pd=Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY);vz*=d/pd;vz=Math.max(.03,Math.min(3,vz));setTransform()}touches=[...e.touches]}},{passive:false})
-wrap.addEventListener('touchend',()=>{dragging=false;touches=[]})
+function doZoom(f){const r=cw.getBoundingClientRect(),cx=r.width/2,cy=r.height/2;vx=cx-(cx-vx)*f;vy=cy-(cy-vy)*f;vz=Math.max(.03,Math.min(3,vz*f));setTx()}
+function resetView(){const r=cw.getBoundingClientRect();vz=Math.min(r.width/10000,r.height/1500)*.85;vx=r.width/2;vy=60*vz;setTx()}
 
-// ── GRAPH RENDER ──────────────────────────────────────────────────────────────
+// KEYBOARD
+document.addEventListener('keydown',e=>{
+  const mo=document.getElementById('mb').classList.contains('v')
+  if(e.key==='Escape'){closeModal();closePanel();closeConf()}
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'&&mo){e.preventDefault();saveNode()}
+  if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();document.getElementById('sch').focus()}
+  if(mo)return
+  const P=30/vz
+  if(e.key==='ArrowLeft'){vx+=P;setTx()}
+  if(e.key==='ArrowRight'){vx-=P;setTx()}
+  if(e.key==='ArrowUp'){vy+=P;setTx()}
+  if(e.key==='ArrowDown'){vy-=P;setTx()}
+  if(e.key==='='||e.key==='+')doZoom(1.15)
+  if(e.key==='-')doZoom(.87)
+})
+
+// THEME
+function applyTheme(){document.body.classList.toggle('light',!darkMode);document.getElementById('tbtn').textContent=darkMode?'☀️':'🌙'}
+function toggleTheme(){darkMode=!darkMode;localStorage.setItem('bstmTheme',darkMode?'dark':'light');applyTheme()}
+applyTheme()
+
+// GRAPH
+function sv(tag,attrs={}){const el=document.createElementNS('http://www.w3.org/2000/svg',tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));return el}
+
 function buildGraph(data){
-  const g = document.getElementById('graph-root')
-  g.innerHTML=''
-
-  const nameToPos={}
-  const byType={}
-  LAYERS.forEach(t=>{byType[t]=[]})
-  data.forEach(n=>{if(byType[n.type])byType[n.type].push(n)})
-
-  // First pass: calc positions
-  LAYERS.forEach((type,li)=>{
-    const items=byType[type]
-    const gap=GG[li]
-    const totalW=(items.length-1)*gap
-    const w=NW[type],h=NH[type]
-    items.forEach((n,i)=>{
-      const x=i*gap-totalW/2-w/2
-      const y=YY[li]-h/2
-      nameToPos[n.id]={x:x+w/2,y:y+h/2,w,h}
-    })
-  })
-
-  // Edges layer
-  const edgeG=document.createElementNS('http://www.w3.org/2000/svg','g')
-  edgeG.setAttribute('id','edges')
-  g.appendChild(edgeG)
-
-  // Node layer
-  const nodeG=document.createElementNS('http://www.w3.org/2000/svg','g')
-  nodeG.setAttribute('id','nodes')
-  g.appendChild(nodeG)
-
-  // Build nameToId map
-  const nameToId={}
-  data.forEach(n=>{nameToId[n.name]=n.id})
-
-  // Draw edges
+  gr.innerHTML=''
+  const nid={};data.forEach(n=>{nid[n.name]=n.id})
+  const bt=Object.fromEntries(LAYERS.map(t=>[t,[]]))
+  data.forEach(n=>{if(bt[n.type])bt[n.type].push(n)})
+  const pos={}
+  LAYERS.forEach((t,li)=>{const its=bt[t],gap=GG[li],w=NW[t],h=NH[t],tw=(its.length-1)*gap;its.forEach((n,i)=>{pos[n.id]={x:i*gap-tw/2,y:YY[li],w,h}})})
+  const eg=sv('g');gr.appendChild(eg);const ng=sv('g');gr.appendChild(ng)
   data.forEach(n=>{
-    if(n.parent_name&&nameToId[n.parent_name]){
-      const from=nameToPos[nameToId[n.parent_name]]
-      const to=nameToPos[n.id]
-      if(from&&to) drawEdge(edgeG,from,to,TH[n.type]?.b||'#38bdf8',n.type==='company'||n.type==='dept')
-    }
-    // CabLink cross-edges
+    if(n.parent_name&&nid[n.parent_name]){const f=pos[nid[n.parent_name]],t=pos[n.id];if(f&&t)drawEdge(eg,f,t,TH[n.type]?.b||'#38bdf8',n.type==='company'||n.type==='dept')}
     if(n.name==='CabLink PWA'){
-      if(nameToId['THoBoCoin Ltd']){
-        const from=nameToPos[nameToId['THoBoCoin Ltd']]
-        const to=nameToPos[n.id]
-        if(from&&to) drawEdge(edgeG,from,to,'#fb923c',true,'arr-thb','5,3','THB')
-      }
-      if(nameToId['BSTM Holdings']){
-        const from=nameToPos[nameToId['BSTM Holdings']]
-        const to=nameToPos[n.id]
-        if(from&&to) drawEdge(edgeG,from,to,'#a78bfa44',false,'arr-hld','4,4')
-      }
+      if(nid['THoBoCoin Ltd']){const f=pos[nid['THoBoCoin Ltd']],t=pos[n.id];if(f&&t)drawEdge(eg,f,t,'#fb923c88',true,'arr-thb','5,3','THB')}
+      if(nid['BSTM Holdings']){const f=pos[nid['BSTM Holdings']],t=pos[n.id];if(f&&t)drawEdge(eg,f,t,'#a78bfa44',false,'arr-hld','4,4')}
     }
   })
-
-  // Draw nodes
-  LAYERS.forEach((type,li)=>{
-    const items=byType[type]
-    const gap=GG[li]
-    const totalW=(items.length-1)*gap
-    const w=NW[type],h=NH[type]
-    items.forEach((n,i)=>{
-      const cx=i*gap-totalW/2
-      const cy=YY[li]
-      drawNode(nodeG,n,cx-w/2,cy-h/2,w,h)
-    })
-  })
-
-  // Fit view on first load
-  fitView()
+  LAYERS.forEach((t,li)=>{const its=bt[t],gap=GG[li],w=NW[t],h=NH[t],tw=(its.length-1)*gap;its.forEach((n,i)=>{drawNode(ng,n,i*gap-tw/2-w/2,YY[li]-h/2,w,h)})})
 }
 
-function drawEdge(parent,from,to,color,animated,marker='arr',dash='',label=''){
-  const mx=(from.x+to.x)/2
-  const path=document.createElementNS('http://www.w3.org/2000/svg','path')
-  const d=`M${from.x},${from.y} C${from.x},${(from.y+to.y)/2} ${to.x},${(from.y+to.y)/2} ${to.x},${to.y}`
-  path.setAttribute('d',d)
-  path.setAttribute('fill','none')
-  path.setAttribute('stroke',color)
-  path.setAttribute('stroke-width','1')
-  path.setAttribute('marker-end',`url(#${marker})`)
-  if(dash) path.setAttribute('stroke-dasharray',dash)
-  if(animated){
-    path.setAttribute('stroke-dasharray','8 4')
-    path.innerHTML=`<animate attributeName="stroke-dashoffset" values="24;0" dur="1.2s" repeatCount="indefinite"/>`
-  }
-  parent.appendChild(path)
-  if(label){
-    const tx=document.createElementNS('http://www.w3.org/2000/svg','text')
-    tx.setAttribute('x',mx)
-    tx.setAttribute('y',(from.y+to.y)/2)
-    tx.setAttribute('fill',color)
-    tx.setAttribute('font-size','9')
-    tx.setAttribute('font-family','IBM Plex Mono,monospace')
-    tx.setAttribute('text-anchor','middle')
-    tx.textContent=label
-    parent.appendChild(tx)
-  }
+function drawEdge(p,f,t,color,anim,marker='arr',dash='',label=''){
+  const path=sv('path',{d:`M${f.x},${f.y} C${f.x},${(f.y+t.y)/2} ${t.x},${(f.y+t.y)/2} ${t.x},${t.y}`,fill:'none',stroke:color,'stroke-width':'1','marker-end':`url(#${marker})`})
+  if(anim){path.setAttribute('stroke-dasharray','8 4');path.innerHTML=`<animate attributeName="stroke-dashoffset" values="24;0" dur="1.2s" repeatCount="indefinite"/>`}
+  else if(dash)path.setAttribute('stroke-dasharray',dash)
+  p.appendChild(path)
+  if(label){const tx=sv('text',{x:(f.x+t.x)/2,y:(f.y+t.y)/2,fill:color,'font-size':'9','font-family':'IBM Plex Mono,monospace','text-anchor':'middle'});tx.textContent=label;p.appendChild(tx)}
 }
 
-function drawNode(parent,n,x,y,w,h){
-  const th=TH[n.type]||TH.room
-  const isSov=n.type==='sovereign'
-  const isCab=n.name==='CabLink PWA'
-  const isTHB=n.name==='THoBoCoin Ltd'
-
-  const g=document.createElementNS('http://www.w3.org/2000/svg','g')
-  g.setAttribute('class','node-card'+(isSov?' node-pulse':''))
-  g.setAttribute('transform',`translate(${x},${y})`)
-  g.style.cursor='pointer'
-  g.addEventListener('click',()=>showPanel(n))
-
-  // Background rect
-  const rx=document.createElementNS('http://www.w3.org/2000/svg','rect')
-  rx.setAttribute('width',w)
-  rx.setAttribute('height',h)
-  rx.setAttribute('rx','7')
-  rx.setAttribute('fill',th.bg)
-  rx.setAttribute('stroke',th.b)
-  rx.setAttribute('stroke-width','1.5')
-  rx.setAttribute('class','node-bg')
-  g.appendChild(rx)
-
-  // Scanline texture
-  const lines=document.createElementNS('http://www.w3.org/2000/svg','rect')
-  lines.setAttribute('width',w)
-  lines.setAttribute('height',h)
-  lines.setAttribute('rx','7')
-  lines.setAttribute('fill','url(#scan)')
-  lines.setAttribute('opacity','0.03')
-  g.appendChild(lines)
-
-  // Status dot
-  const dotR=n.type==='room'?3:3.5
-  const dot=document.createElementNS('http://www.w3.org/2000/svg','circle')
-  dot.setAttribute('cx',10)
-  dot.setAttribute('cy',h/2)
-  dot.setAttribute('r',dotR)
-  dot.setAttribute('fill',SC[n.status]||SC.green)
-  if(isCab||isTHB) dot.setAttribute('class','node-dot-pulse')
+function drawNode(p,n,x,y,w,h){
+  const th=TH[n.type]||TH.room,isSov=n.type==='sovereign',isCab=n.name==='CabLink PWA',isTHB=n.name==='THoBoCoin Ltd'
+  const g=sv('g',{class:'ncard'+(isSov?' npulse':''),transform:`translate(${x},${y})`,'data-id':n.id,'data-name':n.name,'data-type':n.type,role:'button','aria-label':n.name,tabindex:'0'})
+  g.appendChild(sv('rect',{width:w,height:h,rx:'7',fill:th.bg,stroke:th.b,'stroke-width':'1.5'}))
+  const dot=sv('circle',{cx:'10',cy:h/2,r:'3.5',fill:SC[n.status]||SC.green})
+  if(isCab||isTHB)dot.innerHTML=`<animate attributeName="r" values="3;4.5;3" dur="2s" repeatCount="indefinite"/>`
   g.appendChild(dot)
-
-  // Type label
-  const typeLabel=isCab?'LIVE PWA':isTHB?'🔥 THB':n.type
-  const tl=document.createElementNS('http://www.w3.org/2000/svg','text')
-  tl.setAttribute('x',20)
-  tl.setAttribute('y',n.type==='room'?h/2-5:h/2-8)
-  tl.setAttribute('fill',th.b)
-  tl.setAttribute('font-size','7')
-  tl.setAttribute('font-family','IBM Plex Mono,monospace')
-  tl.setAttribute('font-weight','700')
-  tl.setAttribute('letter-spacing','1')
-  tl.textContent=typeLabel.toUpperCase()
+  const tl=sv('text',{x:'20',y:h/2-(n.type==='room'?4:8),fill:th.b,'font-size':'7','font-family':'IBM Plex Mono,monospace','font-weight':'700','letter-spacing':'1'})
+  tl.textContent=`${IC[n.type]||''} ${isCab?'LIVE PWA':isTHB?'THB COIN':n.type}`.toUpperCase().trim()
   g.appendChild(tl)
-
-  // Node name
-  const maxW=w-28
-  const nl=document.createElementNS('http://www.w3.org/2000/svg','text')
-  nl.setAttribute('x',20)
-  nl.setAttribute('y',n.type==='room'?h/2+7:h/2+6)
-  nl.setAttribute('fill','#e8e8e8')
-  nl.setAttribute('font-size',n.type==='room'?'9.5':'11')
-  nl.setAttribute('font-family','IBM Plex Mono,monospace')
-  nl.setAttribute('font-weight','700')
-  // Truncate if needed
-  let name=n.name
-  if(name.length>22&&n.type!=='sovereign') name=name.slice(0,20)+'…'
-  nl.textContent=name
-  g.appendChild(nl)
-
-  // User count badge
-  if(n.users>0){
-    const ub=document.createElementNS('http://www.w3.org/2000/svg','text')
-    ub.setAttribute('x',w-6)
-    ub.setAttribute('y',h/2+6)
-    ub.setAttribute('fill','#a78bfa')
-    ub.setAttribute('font-size','8')
-    ub.setAttribute('font-family','IBM Plex Mono,monospace')
-    ub.setAttribute('text-anchor','end')
-    ub.textContent=`👥${n.users}`
-    g.appendChild(ub)
-  }
-
-  parent.appendChild(g)
+  let nm=n.name;if(nm.length>22&&!isSov)nm=nm.slice(0,20)+'…'
+  const nl=sv('text',{x:'20',y:h/2+(n.type==='room'?7:7),fill:'#e8e8e8','font-size':n.type==='room'?'9.5':'11','font-family':'IBM Plex Mono,monospace','font-weight':'700'})
+  nl.textContent=nm;g.appendChild(nl)
+  if(n.users>0){const ub=sv('text',{x:w-5,y:h/2+7,fill:'#a78bfa','font-size':'8','font-family':'IBM Plex Mono,monospace','text-anchor':'end'});ub.textContent=`👥${n.users}`;g.appendChild(ub)}
+  g.addEventListener('click',()=>showPanel(n))
+  g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')showPanel(n)})
+  g.addEventListener('mouseenter',e=>showTip(e,n))
+  g.addEventListener('mousemove',e=>{const t=document.getElementById('tip');t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-10)+'px'})
+  g.addEventListener('mouseleave',()=>{document.getElementById('tip').style.display='none'})
+  p.appendChild(g)
 }
 
-function fitView(){
-  const rect=wrap.getBoundingClientRect()
-  const W=rect.width,H=rect.height-52
-  // Graph spans roughly from -5000 to 5000 in X, 0 to 1300 in Y
-  const gw=10000,gh=1500
-  const scaleX=W/gw,scaleY=H/gh
-  vz=Math.min(scaleX,scaleY)*0.85
-  vx=W/2
-  vy=60*vz
-  setTransform()
-}
+// TOOLTIP
+function showTip(e,n){const t=document.getElementById('tip');t.innerHTML=`<b style="color:var(--tx)">${n.name}</b><br>${IC[n.type]||''} ${n.type} · <span style="color:${SC[n.status]}">${n.status}</span><br>👥${n.users||0} · P${Number(n.revenue||0).toLocaleString()} · 🔥${n.thb_burn||0}`;t.style.display='block';t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-10)+'px'}
 
-// ── PANEL ─────────────────────────────────────────────────────────────────────
+// TOAST
+let tTimer=null
+function toast(msg,err=false){const t=document.getElementById('toast');if(tTimer)clearTimeout(tTimer);t.textContent=msg;t.className=(err?'err ':'')+' v';tTimer=setTimeout(()=>t.className='',2800)}
+
+// PANEL
 function showPanel(n){
-  selectedNode=n
-  const th=TH[n.type]||TH.room
-  const panel=document.getElementById('panel')
-  panel.style.borderColor=th.b
-  panel.style.boxShadow=`0 0 28px ${th.b}33`
-  document.getElementById('p-type').style.color=th.b
-  document.getElementById('p-type').textContent=n.name==='CabLink PWA'?'🚕 LIVE PWA':n.type
-  document.getElementById('p-name').textContent=n.name
-  document.getElementById('p-status').textContent=n.status.toUpperCase()
-  document.getElementById('p-status').style.color=SC[n.status]
-  document.getElementById('p-users').textContent=(n.users||0).toLocaleString()
-  document.getElementById('p-rev').textContent=`P${Number(n.revenue||0).toLocaleString()}`
-  document.getElementById('p-thb').textContent=(n.thb_burn||0).toLocaleString()
-  const pp=document.getElementById('p-parent')
-  pp.textContent=n.parent_name?`↑ ${n.parent_name}`:''
-  const pu=document.getElementById('p-url')
-  if(n.url){pu.href=n.url;pu.textContent=`🔗 ${n.url}`;pu.style.color=th.b;pu.style.display='block'}else pu.style.display='none'
-  const pn=document.getElementById('p-notes')
-  if(n.notes){pn.textContent=`📝 ${n.notes}`;pn.style.display='block'}else pn.style.display='none'
-  const po=document.getElementById('p-open')
-  if(n.url){po.href=n.url;po.textContent=`↗ OPEN ${n.name==='CabLink PWA'?'CABLINK PWA':'APP'}`;po.style.display='block'}else po.style.display='none'
-  document.getElementById('p-type').closest('#panel').querySelector('.btn-edit').style.borderColor=th.b+'66'
-  document.getElementById('p-type').closest('#panel').querySelector('.btn-edit').style.color=th.b
-  panel.classList.add('visible')
+  sel=n;const th=TH[n.type]||TH.room,p=document.getElementById('panel')
+  p.style.borderColor=th.b;p.style.boxShadow=`0 0 28px ${th.b}22`
+  document.getElementById('pt').style.color=th.b;document.getElementById('pt').textContent=`${IC[n.type]||''} ${n.name==='CabLink PWA'?'LIVE PWA':n.type}`.trim()
+  document.getElementById('pname').textContent=n.name
+  document.getElementById('ps').textContent=n.status.toUpperCase();document.getElementById('ps').style.color=SC[n.status]
+  document.getElementById('pu').textContent=(n.users||0).toLocaleString()
+  document.getElementById('prev').textContent=`P${Number(n.revenue||0).toLocaleString()}`
+  document.getElementById('pthb').textContent=(n.thb_burn||0).toLocaleString()
+  document.getElementById('ppar').textContent=n.parent_name?`↑ ${n.parent_name}`:''
+  const pu=document.getElementById('purl');if(n.url){pu.href=n.url;pu.textContent=`🔗 ${n.url}`;pu.style.color=th.b;pu.style.display='block'}else pu.style.display='none'
+  const pn=document.getElementById('pnts');if(n.notes){pn.textContent=`📝 ${n.notes}`;pn.style.display='block'}else pn.style.display='none'
+  const po=document.getElementById('popn');if(n.url){po.href=n.url;po.textContent=`↗ OPEN ${n.name==='CabLink PWA'?'CABLINK PWA':'APP'}`;po.style.display='block'}else po.style.display='none'
+  if(n.last_update)document.getElementById('pup').textContent=`UPDATED: ${new Date(n.last_update).toLocaleString()}`
+  p.querySelector('.bedit').style.borderColor=th.b+'66';p.querySelector('.bedit').style.color=th.b
+  p.classList.add('v')
+  const u=new URL(location.href);u.searchParams.set('node',n.id);history.replaceState({},'',u)
 }
+function closePanel(){document.getElementById('panel').classList.remove('v');sel=null;const u=new URL(location.href);u.searchParams.delete('node');history.replaceState({},'',u)}
 
-function closePanel(){
-  document.getElementById('panel').classList.remove('visible')
-  selectedNode=null
-}
-
-// ── EDIT MODAL ────────────────────────────────────────────────────────────────
+// EDIT
 function openEdit(){
-  if(!selectedNode) return
-  editingNode=selectedNode
-  document.getElementById('m-title').textContent=editingNode.name
-  document.getElementById('m-name').value=editingNode.name
-  document.getElementById('m-type').value=editingNode.type
-  document.getElementById('m-status').value=editingNode.status
-  document.getElementById('m-parent').value=editingNode.parent_name||''
-  document.getElementById('m-users').value=editingNode.users||0
-  document.getElementById('m-revenue').value=editingNode.revenue||0
-  document.getElementById('m-thb').value=editingNode.thb_burn||0
-  document.getElementById('m-url').value=editingNode.url||''
-  document.getElementById('m-notes').value=editingNode.notes||''
-  document.getElementById('m-id').textContent=`ID: ${editingNode.id}`
-  document.getElementById('m-msg').className='msg'
-  document.getElementById('m-msg').textContent=''
-  document.getElementById('m-save-btn').textContent='✓ SAVE TO SUPABASE'
-  document.getElementById('modal-backdrop').classList.add('visible')
+  if(!sel)return;editing=sel
+  document.getElementById('mtit').textContent=editing.name
+  document.getElementById('mn').value=editing.name
+  document.getElementById('mtyp').value=editing.type
+  document.getElementById('mst').value=editing.status
+  document.getElementById('mpar').value=editing.parent_name||''
+  document.getElementById('muu').value=editing.users||0
+  document.getElementById('mrv').value=editing.revenue||0
+  document.getElementById('mth').value=editing.thb_burn||0
+  document.getElementById('murl').value=editing.url||''
+  document.getElementById('mnts').value=editing.notes||''
+  document.getElementById('mid').textContent=`ID: ${editing.id} · Ctrl+S to save`
+  document.getElementById('mmsg').className='mmsg'
+  document.getElementById('msav').innerHTML='✓ SAVE TO SUPABASE'
+  document.getElementById('mb').classList.add('v')
+  setTimeout(()=>document.getElementById('mn').focus(),50)
 }
-
-function closeModal(){
-  document.getElementById('modal-backdrop').classList.remove('visible')
-  editingNode=null
-}
+function closeModal(){document.getElementById('mb').classList.remove('v');editing=null}
 
 async function saveNode(){
-  if(!editingNode) return
-  const btn=document.getElementById('m-save-btn')
-  const msg=document.getElementById('m-msg')
-  btn.textContent='SAVING...'
-  btn.style.opacity='.7'
-  msg.className='msg'
-
-  const payload={
-    name:document.getElementById('m-name').value,
-    type:document.getElementById('m-type').value,
-    parent_name:document.getElementById('m-parent').value||null,
-    status:document.getElementById('m-status').value,
-    users:parseInt(document.getElementById('m-users').value)||0,
-    revenue:parseFloat(document.getElementById('m-revenue').value)||0,
-    thb_burn:parseFloat(document.getElementById('m-thb').value)||0,
-    url:document.getElementById('m-url').value||null,
-    notes:document.getElementById('m-notes').value||null,
-    last_update:new Date().toISOString(),
-  }
-
-  const {data,error}=await sb.from('ecosystem_map').update(payload).eq('id',editingNode.id).select().single()
-  btn.style.opacity='1'
-  if(error){
-    msg.className='msg err'
-    msg.textContent='❌ '+error.message
-    btn.textContent='✓ SAVE TO SUPABASE'
-    return
-  }
-  msg.className='msg ok'
-  msg.textContent='✅ Saved!'
-  allNodes=allNodes.map(n=>n.id===editingNode.id?{...n,...payload}:n)
-  updateStats(allNodes)
-  buildGraph(allNodes)
-  if(selectedNode?.id===editingNode.id) showPanel({...editingNode,...payload})
-  btn.textContent='✓ SAVE TO SUPABASE'
-  setTimeout(closeModal,800)
+  if(!editing)return
+  if(Date.now()-lastSave<3000&&lastSave>0){toast('⏳ Wait 3s between saves');return}
+  const btn=document.getElementById('msav'),msg=document.getElementById('mmsg')
+  const users=parseInt(document.getElementById('muu').value)
+  const revenue=parseFloat(document.getElementById('mrv').value)
+  const thb=parseFloat(document.getElementById('mth').value)
+  const name=document.getElementById('mn').value.trim()
+  if(!name){msg.className='mmsg err';msg.textContent='❌ Name cannot be blank';return}
+  if(isNaN(users)||users<0){msg.className='mmsg err';msg.textContent='❌ Users must be ≥ 0';return}
+  if(isNaN(revenue)||revenue<0){msg.className='mmsg err';msg.textContent='❌ Revenue must be ≥ 0';return}
+  if(isNaN(thb)||thb<0){msg.className='mmsg err';msg.textContent='❌ THB Burn must be ≥ 0';return}
+  btn.innerHTML='<span class="spn"></span>SAVING...'
+  msg.className='mmsg'
+  const payload={name,type:document.getElementById('mtyp').value,parent_name:document.getElementById('mpar').value||null,status:document.getElementById('mst').value,users,revenue,thb_burn:thb,url:document.getElementById('murl').value||null,notes:document.getElementById('mnts').value||null,last_update:new Date().toISOString()}
+  const {data,error}=await sb.from('ecosystem_map').update(payload).eq('id',editing.id).select().single()
+  btn.innerHTML='✓ SAVE TO SUPABASE'
+  if(error){msg.className='mmsg err';msg.textContent='❌ '+error.message;toast('❌ '+error.message,true);return}
+  lastSave=Date.now()
+  msg.className='mmsg ok';msg.textContent='✅ Saved!'
+  all=all.map(n=>n.id===editing.id?{...n,...payload}:n)
+  updateStats(all);buildGraph(all)
+  if(sel?.id===editing.id)showPanel({...editing,...payload})
+  toast('✅ '+name+' saved')
+  confetti()
+  setTimeout(closeModal,700)
 }
 
-// ── STATS ─────────────────────────────────────────────────────────────────────
+// DELETE
+function confirmDel(){if(!sel)return;document.getElementById('confmsg').innerHTML=`Delete <b style="color:var(--red)">${sel.name}</b>?<br><span style="font-size:10px;color:var(--tx3)">This cannot be undone.</span>`;document.getElementById('conf').classList.add('v')}
+function closeConf(){document.getElementById('conf').classList.remove('v')}
+async function doDelete(){
+  if(!sel)return;closeConf()
+  const{error}=await sb.from('ecosystem_map').delete().eq('id',sel.id)
+  if(error){toast('❌ '+error.message,true);return}
+  all=all.filter(n=>n.id!==sel.id);updateStats(all);buildGraph(all);closePanel();toast('🗑 Deleted')
+}
+
+// CONFETTI
+function confetti(){
+  const cols=['#22c55e','#38bdf8','#d4af37','#a78bfa','#fb923c','#f472b6']
+  for(let i=0;i<40;i++){const el=document.createElement('div');el.className='cf';el.style.cssText=`left:${Math.random()*100}vw;top:-10px;width:${6+Math.random()*6}px;height:${6+Math.random()*6}px;background:${cols[i%cols.length]};animation-duration:${1.2+Math.random()*1.6}s;animation-delay:${Math.random()*.5}s`;document.body.appendChild(el);setTimeout(()=>el.remove(),3000)}
+}
+
+// SEARCH
+let srchQ=''
+function onSearch(v){srchQ=v.trim().toLowerCase();document.getElementById('scx').className=srchQ?'v':'';applyFilter()}
+function clearSrch(){document.getElementById('sch').value='';srchQ='';document.getElementById('scx').className='';applyFilter()}
+function applyFilter(){document.querySelectorAll('.ncard').forEach(g=>{const nm=(g.getAttribute('data-name')||'').toLowerCase(),ty=(g.getAttribute('data-type')||'').toLowerCase();g.style.opacity=!srchQ||nm.includes(srchQ)||ty.includes(srchQ)?'1':'0.07'})}
+
+// SORT
+function onSort(v){
+  if(!v){buildGraph(all);return}
+  const s=[...all].sort((a,b)=>{if(v==='users')return(b.users||0)-(a.users||0);if(v==='revenue')return Number(b.revenue||0)-Number(a.revenue||0);if(v==='thb')return Number(b.thb_burn||0)-Number(a.thb_burn||0);if(v==='name')return a.name.localeCompare(b.name);return 0})
+  buildGraph(s)
+}
+
+// STATS
 function updateStats(data){
-  const users=data.reduce((s,n)=>s+(n.users||0),0)
-  const rev=data.reduce((s,n)=>s+Number(n.revenue||0),0)
+  document.getElementById('sn').textContent=data.length
+  document.getElementById('su').textContent=data.reduce((s,n)=>s+(n.users||0),0).toLocaleString()
+  document.getElementById('sr').textContent=`P${data.reduce((s,n)=>s+Number(n.revenue||0),0).toLocaleString()}`
   const burn=data.reduce((s,n)=>s+Number(n.thb_burn||0),0)
-  document.getElementById('s-nodes').textContent=data.length
-  document.getElementById('s-users').textContent=users.toLocaleString()
-  document.getElementById('s-rev').textContent=`P${rev.toLocaleString()}`
-  document.getElementById('s-burn').textContent=burn.toLocaleString()
-  document.getElementById('burn-val').textContent=burn.toLocaleString()
-  document.getElementById('cnt-g').textContent=data.filter(n=>n.status==='green').length
-  document.getElementById('cnt-y').textContent=data.filter(n=>n.status==='yellow').length
-  document.getElementById('cnt-r').textContent=data.filter(n=>n.status==='red').length
+  document.getElementById('sb').textContent=burn.toLocaleString()
+  document.getElementById('bval').textContent=burn.toLocaleString()
+  document.getElementById('cg').textContent=data.filter(n=>n.status==='green').length
+  document.getElementById('cy').textContent=data.filter(n=>n.status==='yellow').length
+  document.getElementById('cr').textContent=data.filter(n=>n.status==='red').length
+  document.getElementById('stxt').textContent=new Date().toLocaleTimeString()
 }
 
-// ── LOAD DATA ─────────────────────────────────────────────────────────────────
+// EXPORT PNG
+async function exportPNG(){
+  toast('📷 Generating...')
+  try{const c=await html2canvas(cw,{backgroundColor:'#04040d',scale:1.5,logging:false,useCORS:true});const a=document.createElement('a');a.download=`bstm-net-${Date.now()}.png`;a.href=c.toDataURL('image/png');a.click();toast('✅ PNG downloaded')}
+  catch(e){toast('❌ '+e.message,true)}
+}
+
+// SHARE
+function shareLink(){const u=location.href;if(navigator.clipboard)navigator.clipboard.writeText(u).then(()=>toast('🔗 Link copied!'));else{const i=document.createElement('input');i.value=u;document.body.appendChild(i);i.select();document.execCommand('copy');i.remove();toast('🔗 Link copied!')}}
+
+// CACHE
+function saveCache(d){try{localStorage.setItem(CACHE,JSON.stringify({ts:Date.now(),data:d}))}catch(e){}}
+function loadCache(){try{const c=localStorage.getItem(CACHE);return c?JSON.parse(c):null}catch(e){return null}}
+
+// LOAD
 async function loadData(){
-  const {data,error}=await sb.from('ecosystem_map').select('*').order('type')
-  if(!error&&data&&data.length>0){
-    allNodes=data
-    updateStats(data)
-    buildGraph(data)
-  }
-  document.getElementById('loading').style.display='none'
-  countdown=60
+  const{data,error}=await sb.from('ecosystem_map').select('*').order('type')
+  if(!error&&data&&data.length>0){all=data;saveCache(data);updateStats(data);buildGraph(data);const nid=new URLSearchParams(location.search).get('node');if(nid){const n=all.find(x=>x.id===nid);if(n)showPanel(n)}}
+  else{const c=loadCache();if(c){all=c.data;updateStats(c.data);buildGraph(c.data);toast('📦 Offline — cached '+new Date(c.ts).toLocaleString())}}
+  document.getElementById('loading').style.display='none';countdown=60
 }
 
-// ── COUNTDOWN ─────────────────────────────────────────────────────────────────
-function startCountdown(){
-  if(countTimer) clearInterval(countTimer)
-  countTimer=setInterval(()=>{
-    countdown--
-    document.getElementById('sync-txt').textContent=`SYNC ${countdown}s`
-    if(countdown<=0){countdown=60;loadData()}
-  },1000)
-}
+function startCountdown(){if(ctimer)clearInterval(ctimer);ctimer=setInterval(()=>{countdown--;if(countdown<=0){countdown=60;loadData()}},1000)}
+function startRealtime(){sb.channel('eco-rt').on('postgres_changes',{event:'*',schema:'public',table:'ecosystem_map'},()=>loadData()).subscribe()}
 
-// ── REALTIME ──────────────────────────────────────────────────────────────────
-function startRealtime(){
-  sb.channel('eco-rt')
-    .on('postgres_changes',{event:'*',schema:'public',table:'ecosystem_map'},()=>{loadData()})
-    .subscribe()
-}
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('load',async()=>{
-  await loadData()
-  startCountdown()
-  startRealtime()
+  const c=loadCache()
+  if(c){all=c.data;updateStats(c.data);buildGraph(c.data);document.getElementById('loading').style.display='none'}
+  await loadData();resetView();startCountdown();startRealtime()
 })
 </script>
 </body>
