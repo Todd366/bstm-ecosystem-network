@@ -113,8 +113,9 @@ body{background:#04040d;color:#e0e0e0;font-family:'IBM Plex Mono',monospace;over
 .msg.err{background:#1a0a0a;border:1px solid #ef444444;color:#ef4444;display:block}
 .modal-btns{display:flex;gap:10px}
 .btn-cancel{flex:1;background:none;border:1px solid #252540;border-radius:7px;color:#666;padding:10px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px}
-.btn-save{flex:2;background:#0a1a0a;border:1px solid #22c55e88;border-radius:7px;color:#22c55e;padding:10px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:900;letter-spacing:.1em;box-shadow:0 0 14px #22c55e22}
-.btn-save:hover{box-shadow:0 0 24px #22c55e44}
+.btn-save{flex:2;background:#14532d;border:2px solid #22c55e;border-radius:7px;color:#22c55e;padding:10px 0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:900;letter-spacing:.1em;box-shadow:0 0 18px #22c55e44;transition:all .15s}
+.btn-save:hover{background:#166534;box-shadow:0 0 28px #22c55e77;color:#fff}
+.btn-save:active{transform:scale(.97)}
 .modal-id{margin-top:10px;font-size:8px;color:#2a2a3a;text-align:center}
 
 /* NODE SVG STYLES */
@@ -570,6 +571,7 @@ async function saveNode(){
   const btn=document.getElementById('m-save-btn')
   const msg=document.getElementById('m-msg')
   btn.textContent='SAVING...'
+  btn.style.opacity='.7'
   msg.className='msg'
 
   const payload={
@@ -586,15 +588,15 @@ async function saveNode(){
   }
 
   const {data,error}=await sb.from('ecosystem_map').update(payload).eq('id',editingNode.id).select().single()
+  btn.style.opacity='1'
   if(error){
     msg.className='msg err'
-    msg.textContent='Error: '+error.message
+    msg.textContent='❌ '+error.message
     btn.textContent='✓ SAVE TO SUPABASE'
     return
   }
   msg.className='msg ok'
-  msg.textContent='✓ Saved to Supabase'
-  // Update local state
+  msg.textContent='✅ Saved!'
   allNodes=allNodes.map(n=>n.id===editingNode.id?{...n,...payload}:n)
   updateStats(allNodes)
   buildGraph(allNodes)
